@@ -450,16 +450,16 @@ async function generateGuidedDraft(){
   const audience=guidedAudience();
   const partyTags=guidedPartyTags();
   const draft=[];
-  const wf=makeDraftNode(uid(),name,'workflow',140,120,{owners,audience,tags:['guided draft',kind.toLowerCase(),...partyTags],gaps:[...gaps],desc:`Draft ${kind.toLowerCase()} generated from the guided start.`});
+  const wf=makeDraftNode(uid(),name,'workflow',140,180,{owners,audience,tags:['guided draft',kind.toLowerCase(),...partyTags],gaps:[...gaps],desc:`Draft ${kind.toLowerCase()} generated from the guided start.`});
   draft.push(wf);
   const shouldMakeJourney=kind.toLowerCase().includes('journey')||audience.includes('external');
-  const journey=shouldMakeJourney?makeDraftNode(uid(),`${name} journey`,'journey',160,310,{owners,audience,tags:['guided draft','journey'],desc:`Journey view for ${name}.`,connects:[{to:wf.id,b:'association',curve:{dx:-80,dy:40}}],journeyRefs:[]}):null;
+  const journey=shouldMakeJourney?makeDraftNode(uid(),`${name} journey`,'journey',140,430,{owners,audience,tags:['guided draft','journey'],desc:`Journey view for ${name}.`,connects:[{to:wf.id,b:'association'}],journeyRefs:[]}):null;
   if(journey)draft.push(journey);
   parties.forEach((label,i)=>{
     const lower=label.toLowerCase();
     const pAudience=lower.includes('customer')||lower.includes('client')||lower.includes('portal')?['external']:(lower.includes('vendor')||lower.includes('partner')?[]:audience);
-    const p=makeDraftNode(uid(),label,'workflow',430+(i%3)*240,90+Math.floor(i/3)*150,{owners:[],audience:pAudience,tags:['involved',...partyTags],desc:`Involved party, system, team or vendor for ${name}.`});
-    addDraftConnection(wf,p,'association','',draftCurveBetween(wf,p,(wf.x+p.x)/2,Math.min(wf.y,p.y)-70-(i%3)*18));
+    const col=Math.floor(i/2),row=i%2;
+    const p=makeDraftNode(uid(),label,'workflow',520+col*310,90+row*220,{owners:[],audience:pAudience,tags:['involved',...partyTags],desc:`Involved party, system, team or vendor for ${name}. Link it to specific steps once the relationship is known.`});
     draft.push(p);
   });
   const child=[];
@@ -484,26 +484,27 @@ async function generateGuidedDraft(){
     const source=nodeByLabel.get(String(config.after||'').toLowerCase())||anchor;
     const sourceIndex=mainPath.indexOf(source),nextMain=sourceIndex>=0?mainPath[sourceIndex+1]:null;
     if(nextMain&&source.connects)source.connects=source.connects.filter(e=>e.to!==nextMain.id);
-    d.x=Math.min(outcomeNode.x-stepGap*.45,source.x+stepGap*.75+i*80);
-    d.y=decisionY+(i%2)*105;
-    addDraftConnection(source,d,'conditional','',draftCurveBetween(source,d,source.x,d.y-65));
+    d.x=nextMain?(source.x+nextMain.x)/2:source.x+stepGap*.7+i*80;
+    d.y=mainY;
+    addDraftConnection(source,d,'conditional');
     const continueNode=nodeByLabel.get(String(config.continueTo||'').toLowerCase())||nextMain||outcomeNode;
     const routes=(config.routes&&config.routes.length)?config.routes:[{path:'Continue',target:continueNode.label}];
     routes.forEach((route,rIndex)=>{
       const targetLabel=route.target||route.path||continueNode.label;
       let dest=nodeByLabel.get(String(targetLabel||'').toLowerCase());
       if(!dest){
-        dest=makeDraftNode(uid(),targetLabel,'feature',d.x+stepGap*(rIndex+1),d.y+(rIndex%2?-95:95),{parent:wf.id,owners,audience,tags:['branch step'],desc:`Branch action for path: ${route.path||targetLabel}`});
+        const laneY=mainY+170+(rIndex*120);
+        const continueX=continueNode?continueNode.x:d.x+stepGap;
+        dest=makeDraftNode(uid(),targetLabel,'feature',(d.x+continueX)/2,laneY,{parent:wf.id,owners,audience,tags:['branch step'],desc:`Branch action for path: ${route.path||targetLabel}`});
         child.push(dest);nodeByLabel.set(String(dest.label||'').toLowerCase(),dest);
       }
-      addDraftConnection(d,dest,rIndex===routes.length-1&&d.type==='exclusiveGateway'?'default':'conditional','',draftCurveBetween(d,dest,(d.x+dest.x)/2,d.y+(rIndex%2?-140:140)));
-      if(continueNode&&dest.id!==continueNode.id&&!['outcome'].includes(dest.type))addDraftConnection(dest,continueNode,'sequence','',draftCurveBetween(dest,continueNode,(dest.x+continueNode.x)/2,dest.y+(rIndex%2?-120:120)));
+      addDraftConnection(d,dest,rIndex===routes.length-1&&d.type==='exclusiveGateway'?'default':'conditional');
+      if(continueNode&&dest.id!==continueNode.id&&!['outcome'].includes(dest.type))addDraftConnection(dest,continueNode,'sequence');
     });
   });
   gaps.forEach((label,i)=>{
-    const side=i%2?-1:1;
-    const g=makeDraftNode(uid(),label,'gap',wf.x+260+i*210,wf.y+250+(i%2)*90,{owners,audience,tags:['gap','guided draft','workflow gap'],desc:`Workflow-level gap or concern for ${name}.`});
-    addDraftConnection(g,wf,'association','',draftCurveBetween(g,wf,g.x+side*130,wf.y+170+i*24));
+    const g=makeDraftNode(uid(),label,'gap',520+(i%3)*280,560+Math.floor(i/3)*150,{owners,audience,tags:['gap','guided draft','workflow gap'],desc:`Workflow-level gap or concern for ${name}.`});
+    addDraftConnection(g,wf,'association');
     draft.push(g);
   });
   if(journey){
@@ -644,7 +645,7 @@ function edgeHasReverse(a,b){
   return !!(b.connects||[]).find(e=>e.to===a.id);
 }
 function edgeBaseMidpoint(a,b){
-  const m={x:(a.x+b.x)/2,y:(a.y+b.y)/2-16};
+  const m={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
   if(!edgeHasReverse(a,b))return m;
   const dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1,sign=a.id<b.id?1:-1;
   return{x:m.x+(-dy/len)*24*sign,y:m.y+(dx/len)*24*sign};
