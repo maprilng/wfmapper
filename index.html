@@ -2,15 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Knowledge Graph V1.0.1</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--pane-frame:#4169E1;--app-height:100vh}
-html,body{width:100%;height:100%;overflow:hidden}
+:root{--pane-frame:#4169E1}
 body{font-family:system-ui,sans-serif;background:#f0f0ee}
-#app{display:flex;flex-direction:column;height:var(--app-height);min-height:100svh;overflow:hidden;background:#fff}
-#topbar{height:44px;display:flex;align-items:center;padding:0 max(12px,env(safe-area-inset-right)) 0 max(12px,env(safe-area-inset-left));border-bottom:1px solid #e4e4e0;gap:6px;flex-shrink:0;background:#fff;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+#app{display:flex;flex-direction:column;height:100vh;overflow:hidden;background:#fff}
+#topbar{height:44px;display:flex;align-items:center;padding:0 12px;border-bottom:1px solid #e4e4e0;gap:6px;flex-shrink:0;background:#fff}
 #breadcrumb{display:none}
 .version-pill{font-size:11px;font-weight:700;color:#4169E1;background:#EEF2FF;border:1px solid #cfd8ff;border-radius:999px;padding:3px 9px;white-space:nowrap}
 .top-spacer{flex:1;min-width:8px}
@@ -246,7 +244,7 @@ canvas{display:block;position:absolute;top:0;left:0;touch-action:none}
 .toggle-row{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12px;color:#444}
 .toggle-row input{width:auto}
 #app.landing-active #topbar,#app.landing-active #filterbar,#app.landing-active #scopebar,#app.landing-active #body{display:none}
-#landing-screen{display:none;height:var(--app-height);overflow:auto;background:#F7F8FC;color:#111;padding:28px}
+#landing-screen{display:none;height:100vh;overflow:auto;background:#F7F8FC;color:#111;padding:28px}
 #app.landing-active #landing-screen{display:block}
 .landing-shell{max-width:920px;min-height:100%;margin:0 auto;display:flex;align-items:center;justify-content:center}
 .landing-intro{display:none}
@@ -695,19 +693,6 @@ const splitter=document.getElementById('splitter');
 const selectBox=document.getElementById('select-box');
 const GRAPH_SCHEMA_VERSION='1.0.1';
 let currentGraphHandle=null,currentGraphName='';
-
-function syncViewportHeight(){
-  const vv=window.visualViewport;
-  const h=Math.max(320,Math.round((vv&&vv.height)||window.innerHeight||document.documentElement.clientHeight||720));
-  document.documentElement.style.setProperty('--app-height',h+'px');
-}
-function syncViewportAndResize(){syncViewportHeight();resize()}
-syncViewportHeight();
-window.addEventListener('resize',syncViewportAndResize,{passive:true});
-if(window.visualViewport){
-  window.visualViewport.addEventListener('resize',syncViewportAndResize,{passive:true});
-  window.visualViewport.addEventListener('scroll',syncViewportHeight,{passive:true});
-}
 
 function cloneData(v){return JSON.parse(JSON.stringify(v))}
 function boardSnapshot(){return{nodes:cloneData(NODES),types:cloneData(NODE_TYPES),active:[...activeTypes],selected:[...selectedIds],edge:selectedEdge?{...selectedEdge}:null,crumbs:cloneData(crumbs),scope:currentScope,tx,ty,sc,lastPlaced:lastPlacedNodeId}}
